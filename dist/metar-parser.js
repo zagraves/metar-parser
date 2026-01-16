@@ -59,7 +59,7 @@ class MetarParserHelpers {
     }
     static getCeiling(clouds) {
         return clouds.find((c) => {
-            return c.code === "BKN" || c.code === "OVC";
+            return c.code === "BKN" || c.code === "OVC" || c.code === "VV";
         });
     }
     static metarSplit(metarString) {
@@ -130,10 +130,10 @@ export const metarParser = (metarString) => {
     let mode = 0;
     metarObject.raw_parts.forEach((metarPart) => {
         let match;
-        if (mode < 3 && metarPart.match(/^(\d+)(?:\/(\d+))?(SM)?$/)) {
+        if (mode < 3 && metarPart.match(/^M?(\d+)(?:\/(\d+))?(SM)?$/)) {
             mode = 3; // no wind reported
         }
-        if (mode < 5 && metarPart.match(/^(FEW|SCT|BKN|OVC)(\d+)?/)) {
+        if (mode < 5 && metarPart.match(/^(FEW|SCT|BKN|OVC|VV)(\d+)?/)) {
             mode = 5; // no visibility / conditions reported
         }
         if (mode < 6 && metarPart.match(/(^M?\d+\/M?\d+$)|(^\/\/\/\/\/)/)) {
@@ -186,10 +186,18 @@ export const metarParser = (metarString) => {
                 break;
             case 3:
                 // Visibility
-                match = metarPart.match(/^(\d+)(?:\/(\d+))?(SM)?$/);
+                match = metarPart.match(/^M?(\d+)(?:\/(\d+))?(SM)?$/);
                 if (match) {
-                    const visibility = match[2] ? Number(match[1]) / Number(match[2]) : Number(match[1]);
-                    metarObject.visibility = MetarParserHelpers.getVisibility(match[3] && match[3] === "SM" ? visibility : convert.metersToMiles(visibility), match[3] && match[3] === "SM" ? convert.milesToMeters(visibility) : visibility);
+                    const isLessThan = metarPart.startsWith("M");
+                    const visibilityNum = match[2] ? Number(match[1]) / Number(match[2]) : Number(match[1]);
+                    let miles = visibilityNum;
+                    let meters = visibilityNum;
+                    if (isLessThan) {
+                        // For "M" prefix, set a value slightly less to trigger correct flight category
+                        miles = visibilityNum * 0.99;
+                        meters = miles * 1609.34; // approx miles to meters
+                    }
+                    metarObject.visibility = MetarParserHelpers.getVisibility(match[3] && match[3] === "SM" ? miles : convert.metersToMiles(meters), match[3] && match[3] === "SM" ? convert.milesToMeters(miles) : meters);
                     mode = 4;
                 }
                 else if (metarPart === "CAVOK" || metarPart === "CLR") {
@@ -224,9 +232,10 @@ export const metarParser = (metarString) => {
                 break;
             case 5:
                 // Clouds
-                match = metarPart.match(/^(FEW|SCT|BKN|OVC)(\d+)/);
+                match = metarPart.match(/^(FEW|SCT|BKN|OVC|VV)(\d+)/);
                 if (match) {
-                    metarObject.clouds.push(MetarParserHelpers.getCloud(match[1], match[2]));
+                    const code = match[1];
+                    metarObject.clouds.push(MetarParserHelpers.getCloud(code, match[2]));
                 }
                 // may occur multiple times
                 break;

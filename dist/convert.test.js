@@ -42,3 +42,4 @@ import { convert } from "./convert.js";
     assert.ok(mps > 0.51);
     assert.ok(mps < 0.52);
 }
+console.log("✅ All conversion tests successful");

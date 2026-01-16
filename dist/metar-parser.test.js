@@ -309,3 +309,4 @@ import { convert } from "./convert.js";
     assert.deepStrictEqual(result.icao, "KJFK");
     assert.deepStrictEqual(result.ceiling.feet, 20000);
 }
+console.log("✅ All METAR tests successful");

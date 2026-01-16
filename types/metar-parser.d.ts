@@ -16,7 +16,7 @@ export interface MetarVisibility {
     meters: number;
     meters_text: string;
 }
-export type MetarCloudCode = "FEW" | "SCT" | "BKN" | "OVC";
+export type MetarCloudCode = "FEW" | "SCT" | "BKN" | "OVC" | "VV";
 export interface MetarCloud {
     code: MetarCloudCode;
     feet: number;
